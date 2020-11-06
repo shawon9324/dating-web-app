@@ -23,3 +23,4 @@ Route::any('/login','UserController@login')->name('login');
 Route::any('/logout','UserController@logout')->name('logout');
 Route::any('/dating','UserController@dating')->middleware('auth');
 
+

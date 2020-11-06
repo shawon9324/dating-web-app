@@ -7,12 +7,11 @@
             <div class="form-group">
                 <input type="email" class="form-control" name="email" id="email" placeholder="Email" required="required">
             </div>
-            <div class="form-group">
+        <div class="form-group">
                 <input type="password" class="form-control" name="password" id="password" placeholder="Password"
                     required="required">
             </div>
             <div class="form-group small clearfix">
-                <label class="form-check-label"><input type="checkbox"> Remember me</label>
                 <a href="#" class="forgot-link">Forgot Password?</a>
             </div>
             <button type="submit" class="btn btn-primary btn-block btn-lg">Login</button>
