@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -25,6 +26,21 @@ class UserController extends Controller
         // echo "<pre>"; print_r($data);die;
         return redirect()->back();
         }
-        return view ('user.register');
+        return view ('user.register2');
+    }
+    public function userImageUpload(Request $request){
+
+    }
+    public function login(Request $request){
+        if($request->isMethod('post')){
+            $data = $request->all();
+            // echo "<pre>" ; print_r($data) ; die;
+            if(Auth::attempt(['email'=>$data['email'],'password'=>$data['password']])){
+                echo "success";die;
+            }else{
+                echo "failed!";die;
+            }
+        }
+        return view('user.login');
     }
 }

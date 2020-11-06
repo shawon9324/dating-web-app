@@ -19,4 +19,5 @@ Route::get('/', function () {
 
 
 Route::any('/register','UserController@register');
+Route::any('/login','UserController@login');
 
