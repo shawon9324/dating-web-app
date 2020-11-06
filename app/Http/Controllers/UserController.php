@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use Session;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
 class UserController extends Controller
 {
     public function register(Request $request){
@@ -24,23 +24,31 @@ class UserController extends Controller
         $user->longitude =$geoipInfo->lon;   
         $user->save(); 
         // echo "<pre>"; print_r($data);die;
-        return redirect()->back();
+        return redirect('/login');
         }
-        return view ('user.register2');
+        return view ('user.register');
     }
-    public function userImageUpload(Request $request){
 
-    }
     public function login(Request $request){
         if($request->isMethod('post')){
             $data = $request->all();
             // echo "<pre>" ; print_r($data) ; die;
             if(Auth::attempt(['email'=>$data['email'],'password'=>$data['password']])){
-                echo "success";die;
+                // echo "success";die;
+                Session::put('datingSignInSession',$data['email']);
+                return redirect('/dating');
             }else{
-                echo "failed!";die;
+                return redirect()->back();
             }
         }
         return view('user.login');
+    }
+    public function dating(){
+        return view('dating.dating');
+    }
+    public function logout(){
+        Auth::logout();
+        Session::forget('datingSignInSession');
+        return redirect('/');
     }
 }

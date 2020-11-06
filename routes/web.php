@@ -17,7 +17,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-
-Route::any('/register','UserController@register');
-Route::any('/login','UserController@login');
+Route::any('/','IndexController@index')->name('index');
+Route::any('/register','UserController@register')->name('register');
+Route::any('/login','UserController@login')->name('login');
+Route::any('/logout','UserController@logout')->name('logout');
+Route::any('/dating','UserController@dating')->middleware('auth');
 
