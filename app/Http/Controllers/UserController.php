@@ -10,6 +10,8 @@ use Illuminate\Support\Carbon;
 use Validator;
 use Image;
 Use Alert;
+use App\Like;
+use App\User2;
 
 class UserController extends Controller
 {
@@ -69,8 +71,27 @@ class UserController extends Controller
         }
         return view('user.login');
     }
+    public function imageUp(Request $request){
+
+        if($request->isMethod('post')){
+            $data = $request->all();
+            if ($request->hasFile('image')) {
+                $image_temp = $request->file('image');
+                if ($image_temp->isValid()) {
+                    $image_name = $image_temp->getClientOriginalName();
+                    $imageName = rand(111, 99999) . '-' . $image_name;
+                    $image_path = 'image/' . $imageName;
+                    Image::make($image_temp)->save($image_path);
+                    User::where('email', Auth::user()->email)->update(['image' => $imageName]);
+                    return redirect('/dating');
+                }
+            }
+        }
+        return view('user.image_upload');
+    }
     public function dating()
     {
+
         $current_user_latitude = Auth::user()->latitude;    //get current logged in user's lat & long
         $current_user_longitude = Auth::user()->longitude;
         function distance($lat1, $lon1, $lat2, $lon2){
@@ -116,22 +137,34 @@ class UserController extends Controller
         Session::forget('datingSignInSession');
         return redirect('/');
     }
-    public function imageUp(Request $request){
-
-        if($request->isMethod('post')){
+    public function updateLikeStatus(Request $request){
+        if($request->ajax()){
             $data = $request->all();
-            if ($request->hasFile('image')) {
-                $image_temp = $request->file('image');
-                if ($image_temp->isValid()) {
-                    $image_name = $image_temp->getClientOriginalName();
-                    $imageName = rand(111, 99999) . '-' . $image_name;
-                    $image_path = 'image/' . $imageName;
-                    Image::make($image_temp)->save($image_path);
-                    User::where('email', Auth::user()->email)->update(['image' => $imageName]);
-                    return redirect('/dating');
-                }
+            if($data['like_status']=="Like"){ 
+                $status = 1;
             }
+            else{
+                $status = 0;
+            }
+            if(Like::where(['user_id'=>$data['user_id'],'target_user_id'=>$data['target_user_id']])->exists())
+            {
+                Like::where(['user_id'=>$data['user_id'] ,'target_user_id'=>$data['target_user_id']])->update(['like_status'=>$status]);
+            }else{
+                $like = new Like;
+                $like->user_id = $data['user_id'];
+                $like->target_user_id =$data['target_user_id'];
+                $like->like_status = 1;
+                $like->save();
+            }
+            $count = Like::where(['user_id'=>$data['target_user_id'] ,'target_user_id'=>$data['user_id'] ,'like_status'=>1])->count();
+            if($count == 1){
+                $mututal = 1;
+            }else{
+                $mututal = 0;
+            }
+            
+            return response()->json(['like_status'=>$status,'target_user_id'=>$data['target_user_id'] ,'mututal'=>$mututal]);
         }
-        return view('user.image_upload');
     }
+    
 }

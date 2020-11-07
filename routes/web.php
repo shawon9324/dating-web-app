@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+Route::any('update-like-status', 'UserController@updateLikeStatus');
 
 Route::get('/','IndexController@index')->name('index');
 Route::any('/register','UserController@register')->name('register');
@@ -24,6 +25,7 @@ Route::any('/login','UserController@login')->name('login');
 Route::group(['middleware' => ['auth']], function () {
     Route::get('/logout','UserController@logout')->name('logout');
     Route::any('/dating','UserController@dating')->name('dating');
+
     Route::match(['get','post'],'/dating/image-upload','UserController@imageUp')->name('image-up');
 
 });
