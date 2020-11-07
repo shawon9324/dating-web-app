@@ -3,7 +3,7 @@
 @section('content')
 <header class="masthead bg-primary text-white text-center">
     <div class="container d-flex align-items-center flex-column">
-        <img class="masthead-avatar mb-5" src="{{ asset('image/cake.png')}} " alt="" />
+        <img class="masthead-avatar mb-5" src="{{ asset('image/'.Auth::user()->image) }} " alt="" />
         <h1 class="masthead-heading mb-0">{{ Auth::user()->name }}</h1>
         <p class="masthead-subheading font-weight-light mb-0">({{ Carbon::parse(Auth::user()->date_of_birth )->age}} y/o) </p>
         <div class="divider-custom divider-light">

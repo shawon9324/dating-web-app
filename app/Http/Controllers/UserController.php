@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
 use Validator;
+use Image;
 Use Alert;
 
 class UserController extends Controller
@@ -56,7 +57,12 @@ class UserController extends Controller
                 // echo "success";die;
                 Session::put('datingSignInSession', $data['email']);
                 $msg = Auth::user()->name;
-                return redirect('/dating')->with('toast_success','Welcome back,'.$msg);
+                if(empty(Auth::user()->image)){
+                    Alert::warning('Warning', 'Please Upload Profile Photo');
+                    return redirect('/dating/image-upload');
+                }else{
+                    return redirect('/dating')->with('toast_success','Welcome back,'.$msg);
+                }
             } else {
                 return back()->with('toast_error', 'The email or password is incorrect, please try again!');
             }
@@ -82,7 +88,7 @@ class UserController extends Controller
               return round($km,2);
               }
           }
-        $userlists = User::get()->except(Auth::id())->toArray();
+        $userlists = User::inRandomOrder()->get()->except(Auth::id())->toArray();
         $users = [];
         foreach($userlists as $user){
            $distance = distance($current_user_latitude, $current_user_longitude, $user['latitude'], $user['longitude']);
@@ -100,6 +106,7 @@ class UserController extends Controller
                 }
         }
         // $users = array_chunk($users,2);
+        // $users = shuffle($users);
         //  echo "<pre>"; print_r($users);die;
         return view('dating.dating')->with(compact('users'));
     }
@@ -108,5 +115,23 @@ class UserController extends Controller
         Auth::logout();
         Session::forget('datingSignInSession');
         return redirect('/');
+    }
+    public function imageUp(Request $request){
+
+        if($request->isMethod('post')){
+            $data = $request->all();
+            if ($request->hasFile('image')) {
+                $image_temp = $request->file('image');
+                if ($image_temp->isValid()) {
+                    $image_name = $image_temp->getClientOriginalName();
+                    $imageName = rand(111, 99999) . '-' . $image_name;
+                    $image_path = 'image/' . $imageName;
+                    Image::make($image_temp)->save($image_path);
+                    User::where('email', Auth::user()->email)->update(['image' => $imageName]);
+                    return redirect('/dating');
+                }
+            }
+        }
+        return view('user.image_upload');
     }
 }
