@@ -11,7 +11,6 @@ use Validator;
 use Image;
 Use Alert;
 use App\Like;
-use App\User2;
 
 class UserController extends Controller
 {
@@ -27,13 +26,19 @@ class UserController extends Controller
             if ($validator->fails()) {
                 return back()->with('toast_error', $validator->messages()->all()[0])->withInput();
             }
+            /*--------------------------------------------------------------------------
+            | Duplicate Email Check
+            |--------------------------------------------------------------------------*/
             $emailCount = User::where('email',$data['email'])->count();
             if($emailCount>0){
                 Alert::warning('Warning', 'Account with this email already exists!');
                 return back();
             }
-            $geoipInfo = geoip()->getLocation($data['ip']);
-            $location = $geoipInfo->city . ',' . $geoipInfo->state_name . ',' . $geoipInfo->country;
+            /*--------------------------------------------------------------------------
+            | Store User's Data
+            |--------------------------------------------------------------------------*/
+            $geoipInfo = geoip()->getLocation($data['ip']); //Laravel Geoip package by Torann
+            $location = $geoipInfo->city . ',' . $geoipInfo->state_name . ',' . $geoipInfo->country;    //Generate Complete Location
             $user = new User();
             $user->name = $data['name'];
             $user->email = $data['email'];
@@ -41,7 +46,7 @@ class UserController extends Controller
             $user->date_of_birth = $data['dob'];
             $user->gender = $data['gender'];
             $user->location = $location;
-            $user->latitude = $geoipInfo->lat;
+            $user->latitude = $geoipInfo->lat;      //Automatically Store User's Latitude & Longitude based on IP Address
             $user->longitude = $geoipInfo->lon;
             $user->save();
             // echo "<pre>"; print_r($data);die;
@@ -56,10 +61,10 @@ class UserController extends Controller
             $data = $request->all();
             // echo "<pre>" ; print_r($data) ; die;
             if (Auth::attempt(['email' => $data['email'], 'password' => $data['password']])) {
-                // echo "success";die;
                 Session::put('datingSignInSession', $data['email']);
                 $msg = Auth::user()->name;
                 if(empty(Auth::user()->image)){
+                    //FORCE USER TO UPLOAD IMAGE
                     Alert::warning('Warning', 'Please Upload Profile Photo');
                     return redirect('/dating/image-upload');
                 }else{
@@ -71,16 +76,15 @@ class UserController extends Controller
         }
         return view('user.login');
     }
-    public function imageUp(Request $request){
-
+    public function imageUp(Request $request)
+    {
         if($request->isMethod('post')){
-            $data = $request->all();
             if ($request->hasFile('image')) {
                 $image_temp = $request->file('image');
                 if ($image_temp->isValid()) {
                     $image_name = $image_temp->getClientOriginalName();
                     $imageName = rand(111, 99999) . '-' . $image_name;
-                    $image_path = 'image/' . $imageName;
+                    $image_path = 'image/profile_pictures/' . $imageName;
                     Image::make($image_temp)->save($image_path);
                     User::where('email', Auth::user()->email)->update(['image' => $imageName]);
                     return redirect('/dating');
@@ -91,43 +95,46 @@ class UserController extends Controller
     }
     public function dating()
     {
-
         $current_user_latitude = Auth::user()->latitude;    //get current logged in user's lat & long
         $current_user_longitude = Auth::user()->longitude;
+         /*--------------------------------------------------------------------------
+        | Haversine formula -A function To Calculate circle distance on a sphere
+        |--------------------------------------------------------------------------*/
         function distance($lat1, $lon1, $lat2, $lon2){
             if (($lat1 == $lat2) && ($lon1 == $lon2)){
               return 0;
-            }
-            else {
-              /* Haversine formula - To Calculate circle distance on a sphere */
-              $theta = $lon1 - $lon2;
-              $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
-              $dist = acos($dist);
-              $dist = rad2deg($dist);
-              $miles = $dist * 60 * 1.1515;
-              $km = $miles* 1.609344;
-              return round($km,2);
+            } else {
+                $theta = $lon1 - $lon2;
+                $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
+                $dist = acos($dist);
+                $dist = rad2deg($dist);
+                $miles = $dist * 60 * 1.1515;
+                $km = $miles* 1.609344;
+                return round($km,2);
               }
-          }
-        $userlists = User::inRandomOrder()->get()->except(Auth::id())->toArray();
+        }
+
+        // $userlists = User::inRandomOrder()->get()->except(Auth::id())->toArray();
+        $userlists = User::orderBy('id', 'DESC')->get()->except(Auth::id())->toArray();
         $users = [];
+        /*--------------------------------------------------------------------------
+        | Store User around 5 km in Empty Array
+        |--------------------------------------------------------------------------*/
         foreach($userlists as $user){
            $distance = distance($current_user_latitude, $current_user_longitude, $user['latitude'], $user['longitude']);
-           if($distance<=5){
-               $users[] = [
-                            'id'=>$user['id'],
-                            'name'=>$user['name'],
-                            'image'=>$user['image'],
-                            'gender'=>$user['gender'],
-                            'location'=>$user['location'],
-                            'age'=>Carbon::parse($user['date_of_birth'])->age,
-                            'distance'=>$distance
-                          ];
-                }else{
-                }
+           if($distance<=5) {
+                $users[] = [
+                                'id'=>$user['id'],
+                                'name'=>$user['name'],
+                                'image'=>$user['image'],
+                                'gender'=>$user['gender'],
+                                'location'=>$user['location'],
+                                'age'=>Carbon::parse($user['date_of_birth'])->age,
+                                'distance'=>$distance
+                            ];
+                } else{
+                    }
         }
-        // $users = array_chunk($users,2);
-        // $users = shuffle($users);
         //  echo "<pre>"; print_r($users);die;
         return view('dating.dating')->with(compact('users'));
     }
@@ -137,7 +144,8 @@ class UserController extends Controller
         Session::forget('datingSignInSession');
         return redirect('/');
     }
-    public function updateLikeStatus(Request $request){
+    public function updateLikeStatus(Request $request)
+    {
         if($request->ajax()){
             $data = $request->all();
             if($data['like_status']=="Like"){ 
@@ -146,23 +154,29 @@ class UserController extends Controller
             else{
                 $status = 0;
             }
+            /*--------------------------------------------------------------------------
+            | CHECK TARGET USER IS EXIST IN THE DB OR NOT 
+            |--------------------------------------------------------------------------*/
             if(Like::where(['user_id'=>$data['user_id'],'target_user_id'=>$data['target_user_id']])->exists())
-            {
+            {   //IF EXIST ,THEN UPDATE THE ACTION IN DB
                 Like::where(['user_id'=>$data['user_id'] ,'target_user_id'=>$data['target_user_id']])->update(['like_status'=>$status]);
             }else{
+                //IF NOT ,THEN CREATE THE ACTION IN DB
                 $like = new Like;
                 $like->user_id = $data['user_id'];
                 $like->target_user_id =$data['target_user_id'];
                 $like->like_status = 1;
                 $like->save();
             }
+            /*--------------------------------------------------------------------------
+            | MUTUTAL STATUS CHECK
+            |--------------------------------------------------------------------------*/
             $count = Like::where(['user_id'=>$data['target_user_id'] ,'target_user_id'=>$data['user_id'] ,'like_status'=>1])->count();
             if($count == 1){
                 $mututal = 1;
             }else{
                 $mututal = 0;
             }
-            
             return response()->json(['like_status'=>$status,'target_user_id'=>$data['target_user_id'] ,'mututal'=>$mututal]);
         }
     }
