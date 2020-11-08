@@ -14,6 +14,9 @@ use App\Like;
 
 class UserController extends Controller
 {
+    /*--------------------------------------------------------------------------
+    | USER REGISTRATION/SIGNUP FUNCTION
+    |--------------------------------------------------------------------------*/
     public function register(Request $request)
     {
         if ($request->isMethod('post')) {
@@ -55,6 +58,9 @@ class UserController extends Controller
         }
         return view('user.register');
     }
+    /*--------------------------------------------------------------------------
+    | USER LOGIN FUNCTION
+    |--------------------------------------------------------------------------*/
     public function login(Request $request)
     {
         if ($request->isMethod('post')) {
@@ -76,6 +82,9 @@ class UserController extends Controller
         }
         return view('user.login');
     }
+    /*--------------------------------------------------------------------------
+    | USER PROFILE PICTURE UPLOAD FUNCTION
+    |--------------------------------------------------------------------------*/
     public function imageUp(Request $request)
     {
         if($request->isMethod('post')){
@@ -93,6 +102,9 @@ class UserController extends Controller
         }
         return view('user.image_upload');
     }
+    /*--------------------------------------------------------------------------
+    | MAIN DATING PAGE FUNCTION
+    |--------------------------------------------------------------------------*/
     public function dating()
     {
         $current_user_latitude = Auth::user()->latitude;    //get current logged in user's lat & long
@@ -138,12 +150,18 @@ class UserController extends Controller
         //  echo "<pre>"; print_r($users);die;
         return view('dating.dating')->with(compact('users'));
     }
+    /*--------------------------------------------------------------------------
+    | USER LOGOUT FUNCTION
+    |--------------------------------------------------------------------------*/
     public function logout()
     {
         Auth::logout();
         Session::forget('datingSignInSession');
         return redirect('/');
     }
+    /*--------------------------------------------------------------------------
+    | USER LIKE, DISLIKE, MUTUTAL FUCNTION
+    |--------------------------------------------------------------------------*/
     public function updateLikeStatus(Request $request)
     {
         if($request->ajax()){
